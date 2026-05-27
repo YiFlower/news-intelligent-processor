@@ -1,15 +1,20 @@
 #!/bin/bash
 # 软通动力新闻智能整理与分析平台 - 部署脚本
-# 适用系统: CentOS 7
+# 适用系统: OpenCloudOS 9 / CentOS Stream 9 / RHEL 9
 # 用法: bash deploy.sh
 
 set -e
 
 APP_DIR="/opt/news-platform"
 
-echo "=== 1. 安装依赖 ==="
-yum install -y epel-release
-yum install -y nginx python3 python3-pip
+# 自动检测包管理器
+PKG_MGR=$(command -v dnf 2>/dev/null || command -v yum 2>/dev/null)
+if [ -z "$PKG_MGR" ]; then
+    echo "错误: 未找到 dnf 或 yum"; exit 1
+fi
+
+echo "=== 1. 安装系统依赖 ==="
+$PKG_MGR install -y nginx python3 python3-pip gcc python3-devel
 
 echo "=== 2. 部署应用 ==="
 mkdir -p $APP_DIR
@@ -21,9 +26,12 @@ cd backend
 pip3 install -r requirements.txt
 cd ..
 
-echo "=== 4. 安装 Node 依赖并构建前端 ==="
-curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-yum install -y nodejs
+echo "=== 4. 安装 Node.js 并构建前端 ==="
+if ! command -v node &>/dev/null; then
+    # NodeSource for RHEL 9 compatible
+    curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+    $PKG_MGR install -y nodejs
+fi
 cd prototype
 npm install
 npm run build
@@ -31,7 +39,6 @@ cd ..
 
 echo "=== 5. 配置 Nginx ==="
 cp deploy/nginx.conf /etc/nginx/conf.d/news-platform.conf
-# 移除默认配置避免端口冲突
 rm -f /etc/nginx/conf.d/default.conf
 # 检查主配置是否 include conf.d
 grep -q "include.*conf.d" /etc/nginx/nginx.conf || {
@@ -40,11 +47,12 @@ grep -q "include.*conf.d" /etc/nginx/nginx.conf || {
 nginx -t && systemctl enable nginx && systemctl restart nginx
 
 echo "=== 6. 配置后端服务 ==="
-cp .env.example .env
+# 如果 .env 不存在则从模板复制
+[ -f .env ] || cp .env.example .env
 echo ">>> 请编辑 $APP_DIR/.env 填入你的 API Key"
 cp deploy/news-backend.service /etc/systemd/system/
 # 修正 uvicorn 路径
-UVICORN_PATH=$(which uvicorn || echo "/usr/local/bin/uvicorn")
+UVICORN_PATH=$(which uvicorn 2>/dev/null || echo "/usr/local/bin/uvicorn")
 sed -i "s|/usr/local/bin/uvicorn|$UVICORN_PATH|" /etc/systemd/system/news-backend.service
 systemctl daemon-reload
 systemctl enable news-backend
