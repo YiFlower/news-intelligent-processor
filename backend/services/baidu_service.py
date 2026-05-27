@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import logging
 from urllib.parse import urlparse
@@ -226,16 +227,32 @@ async def fetch_raw_articles() -> list[dict]:
     """Fetch news from Baidu Search API and apply basic filtering."""
     all_results: dict[str, dict] = {}
 
-    for query_config in SEARCH_QUERIES:
+    for i, query_config in enumerate(SEARCH_QUERIES):
         query = query_config['query']
         recency = query_config.get('recency', 'year')
 
-        try:
-            references = await _call_baidu_search(query, recency=recency)
-            logger.info('Query "%s" returned %d results', query, len(references))
-        except Exception as e:
-            logger.warning('Query "%s" failed: %s', query, e)
-            continue
+        # 请求间隔，避免触发限流
+        if i > 0:
+            await asyncio.sleep(3)
+
+        # 重试逻辑：429 限流时等待后重试
+        references = []
+        for attempt in range(3):
+            try:
+                references = await _call_baidu_search(query, recency=recency)
+                logger.info('Query "%s" returned %d results', query, len(references))
+                break
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429 and attempt < 2:
+                    wait = 10 * (attempt + 1)
+                    logger.warning('Query "%s" rate limited, retrying in %ds...', query, wait)
+                    await asyncio.sleep(wait)
+                else:
+                    logger.warning('Query "%s" failed: %s', query, e)
+                    break
+            except Exception as e:
+                logger.warning('Query "%s" failed: %s', query, e)
+                break
 
         for ref in references:
             url = ref.get('url', '')
