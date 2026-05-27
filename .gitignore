@@ -1,0 +1,38 @@
+# Dependencies
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# Node
+node_modules/
+prototype/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Data (backend runtime data)
+backend/data/*.json
+
+# Logs
+*.log
+
+# Qoder
+.qoder/
