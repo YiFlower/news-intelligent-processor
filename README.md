@@ -62,63 +62,80 @@
 └── README.md
 ```
 
-## 本地开发
+## 环境配置
 
-### 前置要求
-
-- Python 3.10+
-- Node.js 18+
-- 百度千帆 API Key（[申请地址](https://cloud.baidu.com/doc/qianfan-api/s/Wmbq4z7e5)）
-- OpenAI 兼容 API Key（可选，用于 AI 对话和热点聚合）
-
-### 1. 克隆项目
-
-```bash
-git clone https://github.com/YiFlower/news-intelligent-processor.git
-cd news-intelligent-processor
-```
-
-### 2. 配置环境变量
+适用于本地开发和服务器部署，克隆项目后首先配置环境变量：
 
 ```bash
 cp .env.example .env
 ```
 
-编辑 `.env` 文件，填入你的 API Key：
+编辑 `.env`，填入 API Key：
 
 ```env
 # 百度搜索 API（必填）
 BAIDU_API_KEY=bce-v3/your-key-here
 
-# OpenAI 兼容 API（可选，用于 AI 功能）
+# OpenAI 兼容 API（可选，用于 AI 对话和热点聚合）
 OPENAI_API_KEY=sk-your-key-here
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-### 3. 启动后端
+---
+
+## 本地开发
+
+适用于日常开发和调试，前后端分别启动。
+
+### 1. 安装依赖
+
+```bash
+# 后端
+cd backend
+pip install -r requirements.txt
+
+# 前端
+cd prototype
+npm install
+```
+
+### 2. 启动后端
 
 ```bash
 cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8002 --reload
 ```
 
-后端运行在 `http://localhost:8000`，API 文档：`http://localhost:8000/docs`
+后端运行在 `http://localhost:8002`，`--reload` 支持代码热更新。
 
-### 4. 启动前端
+> 注意：本地开发时 `prototype/src/lib/api.ts` 中的 `API_BASE` 需改为后端地址，如 `http://localhost:8002`。
+
+### 3. 启动前端
 
 ```bash
 cd prototype
-npm install
-npx vite --port 5180
+npm run dev
 ```
 
-前端运行在 `http://localhost:5180`
+前端运行在 `http://localhost:5173`，支持热模块替换（HMR）。
 
-## 生产部署
+### 4. 前端构建
 
-适用于 OpenCloudOS 9 / CentOS Stream 9 / RHEL 9 系统。
+```bash
+cd prototype
+npm run build
+```
+
+构建产物输出到 `prototype/dist/`，可用于部署。
+
+---
+
+## 服务器部署
+
+适用于生产环境，使用 Nginx 反向代理 + systemd 管理后端进程。
+
+兼容 OpenCloudOS 9 / CentOS Stream 9 / RHEL 9。
 
 ### 架构
 
@@ -132,22 +149,30 @@ npx vite --port 5180
 
 Nginx 反向代理统一端口，消除 CORS 问题；systemd 管理后端进程，支持开机自启和崩溃自动重启。
 
-### 一键部署
+### 1. 克隆项目
 
 ```bash
 git clone https://github.com/YiFlower/news-intelligent-processor.git news-platform
 cd news-platform
-vi .env  # 填入 API Key
+```
+
+按上方「环境配置」完成 `.env` 配置。
+
+### 2. 一键部署
+
+```bash
 bash deploy/deploy.sh
 ```
 
-脚本自动完成：安装 Python 依赖 → 构建前端 → 配置 Nginx → 注册 systemd 服务。
+脚本自动完成：Python 依赖安装 → 前端构建 → Nginx 配置 → systemd 服务注册。
 
-部署完成后：
+> 注意：部署脚本会将 `API_BASE` 设为空字符串（相对路径），由 Nginx 代理转发，无需手动修改。
+
+### 3. 启动服务
 
 ```bash
-systemctl start news-backend    # 启动后端
-systemctl enable news-backend   # 设置开机自启
+systemctl start news-backend     # 启动后端
+systemctl enable news-backend    # 设置开机自启
 ```
 
 访问 `http://服务器IP` 即可使用。
@@ -155,7 +180,6 @@ systemctl enable news-backend   # 设置开机自启
 ### 增量更新
 
 ```bash
-cd ~/news-platform
 git pull                                    # 拉取最新代码
 pip3 install -r backend/requirements.txt    # 更新依赖（如有变化）
 cd prototype && npm run build               # 重新构建前端
@@ -168,10 +192,12 @@ systemctl restart nginx                     # 重启 Nginx
 ```bash
 systemctl status news-backend      # 查看后端状态
 systemctl restart news-backend     # 重启后端
-journalctl -u news-backend -f      # 查看后端日志
+journalctl -u news-backend -f      # 查看后端实时日志
 systemctl restart nginx            # 重启 Nginx
-cd /path/to/prototype && npm run build  # 重新构建前端
+cd prototype && npm run build      # 重新构建前端
 ```
+
+---
 
 ## 数据刷新
 
