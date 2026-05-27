@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react"
 import { Link } from "react-router-dom"
 import { Search, Filter, ChevronRight, SlidersHorizontal } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CategoryBadge, KeywordTag, ImportanceDot } from "@/components/CategoryBadge"
 import { NEWS_DATA, type NewsCategory } from "@/lib/data"

@@ -5,12 +5,12 @@ import {
 } from "lucide-react"
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area
+  XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area
 } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CategoryBadge } from "@/components/CategoryBadge"
-import { NEWS_DATA, HOT_TOPICS, CATEGORY_STATS } from "@/lib/data"
+import { NEWS_DATA, HOT_TOPICS } from "@/lib/data"
 
 const TREND_DATA = [
   { date: "03/05", 战略发展: 1, 技术创新: 0, 合作签约: 1, 人事动态: 0, 行业活动: 0 },

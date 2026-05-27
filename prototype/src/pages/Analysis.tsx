@@ -6,7 +6,6 @@ import {
 } from 'recharts'
 import { useTheme } from '@/context/ThemeContext'
 import { CategoryBadge } from '@/components/NewsModal'
-import { CATEGORY_COLORS } from '@/lib/data'
 import type { ApiNewsItem, ApiStats, ApiHotTopic } from '@/lib/api'
 
 const ALL_CATEGORIES = ['战略发展', '技术创新', '人事动态', '合作签约', '行业活动']
